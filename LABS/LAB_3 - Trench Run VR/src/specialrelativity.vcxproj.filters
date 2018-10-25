@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\ext\glad\src\glad.c">
+      <Filter>ext</Filter>
+    </ClCompile>
+    <ClCompile Include="GLSL.cpp" />
+    <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="MatrixStack.cpp" />
+    <ClCompile Include="Shape.cpp" />
+    <ClCompile Include="Program.cpp" />
+    <ClCompile Include="fonts.cpp" />
+    <ClCompile Include="double_algebra.cpp" />
+    <ClCompile Include="OpenVRclass.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GLSL.h" />
+    <ClInclude Include="WindowManager.h" />
+    <ClInclude Include="MatrixStack.h" />
+    <ClInclude Include="Shape.h" />
+    <ClInclude Include="tiny_obj_loader.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Program.h" />
+    <ClInclude Include="fonts.h" />
+    <ClInclude Include="double_algebra.h" />
+    <ClInclude Include="OpenVRclass.h" />
+    <ClInclude Include="camera.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ext">
+      <UniqueIdentifier>{a1735e5b-c01d-45eb-b937-869f0ba27591}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{4ab175f8-af8a-45a6-9c45-54da2480ba70}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\resources\geometry.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\objfrag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\shader_vertex.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\shader_fragment.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\objvertex.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\FBOfragment.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\FBOvertex.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\circlefrag.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\resources\circlevertex.glsl">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
