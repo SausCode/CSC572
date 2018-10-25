@@ -25,7 +25,7 @@ using namespace std;
 using namespace glm;
 shared_ptr<Shape> shape;
 
-#define BUFFCOUNT 1025
+#define BUFFCOUNT 4097
 class ssbo_data
 	{
 	public:
@@ -218,7 +218,8 @@ public:
 			GLint buff_loc = glGetUniformLocation(computeProgram, "sizeofbuffer");
 			if (buff_loc != -1)
 			{
-				glUniform1i(buff_loc, array_size);
+				//glUniform1i(buff_loc, array_size);
+				glUniform1i(buff_loc, BUFFCOUNT);
 			}
 
 			GLint odd_even_loc = glGetUniformLocation(computeProgram, "odd");
@@ -237,7 +238,7 @@ public:
 			glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomicsBuffer);
 			glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomicsBuffer);
 
-			glDispatchCompute((GLuint)2, (GLuint)1, 1);				//start compute shader
+			glDispatchCompute((GLuint)1, (GLuint)1, 1);				//start compute shader
 																	//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
