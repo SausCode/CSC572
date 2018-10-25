@@ -52,11 +52,10 @@ void main()
 				}
 			}
 		}
-
-//		if (dataA[index].y > dataA[index+1].y){
-//			swap(index, index+1);
-//		}
 	}
+
+
+
 
 //	if(index >= sizeofbuffer-1){
 //		return;

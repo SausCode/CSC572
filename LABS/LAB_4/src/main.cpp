@@ -21,6 +21,7 @@ CPE/CSC 471 Lab base code Wood/Dunn/Eckhardt
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <fstream>
 using namespace std;
 using namespace glm;
 shared_ptr<Shape> shape;
@@ -187,12 +188,16 @@ public:
 	}
 	void compute()
 		{
+
+		ofstream fout("output.txt");
+
 		////print data before compute shader
-		//cout << endl << endl << "BUFFER BEFORE COMPUTE SHADER" << endl << endl;		
-		//for (int i = 0; i < BUFFCOUNT; i++) {
-		//	//cout << "dataA: " << ssbo_CPUMEM.dataA[i].x << ", " << ssbo_CPUMEM.dataA[i].y << ", " << ssbo_CPUMEM.dataA[i].z << ", " << ssbo_CPUMEM.dataA[i].w << "   dataB: " << ssbo_CPUMEM.dataB[i].x << ", " << ssbo_CPUMEM.dataB[i].y << ", " << ssbo_CPUMEM.dataB[i].z << ssbo_CPUMEM.dataB[i].w << endl;
-		//	cout << "dataA: " << ssbo_CPUMEM.dataA[i].x << ", " << ssbo_CPUMEM.dataA[i].y << ", " << ssbo_CPUMEM.dataA[i].z << ", " << ssbo_CPUMEM.dataA[i].w << endl;
-		//}
+		cout << endl << endl << "BUFFER BEFORE COMPUTE SHADER" << endl << endl;
+		fout << endl << endl << "BUFFER BEFORE COMPUTE SHADER" << endl << endl;
+		for (int i = 0; i < BUFFCOUNT; i++) {
+			cout << "dataA: " << "Index: " << ssbo_CPUMEM.dataA[i].x << ", Value: " << ssbo_CPUMEM.dataA[i].y << endl;
+			fout << "dataA: " << "Index: " << ssbo_CPUMEM.dataA[i].x << ", Value: " << ssbo_CPUMEM.dataA[i].y << endl;
+		}
 
 		int buffersize = BUFFCOUNT;
 		int groupsize = 1024;
@@ -255,15 +260,19 @@ public:
 		//cout << endl << endl << "BUFFER AFTER COMPUTE SHADER" << endl << endl;
 		////for (int i = 0; i < BUFFCOUNT; i++)
 		//cout << "dataB: " << ssbo_CPUMEM.dataB[0].y << endl;
-
-		cout << endl;
-
-		//cout << "BUFFER AFTER COMPUTE SHADER" << endl;
+		cout << endl << endl;
+		fout << endl << endl;
+		cout << "BUFFER AFTER COMPUTE SHADER" << endl;
+		fout << "BUFFER AFTER COMPUTE SHADER" << endl;
 		for (int i = 0; i < BUFFCOUNT; i++) {
-			cout << "dataA: " << ssbo_CPUMEM.dataA[i].x << ", " << ssbo_CPUMEM.dataA[i].y << ", " << ssbo_CPUMEM.dataA[i].z << ", " << ssbo_CPUMEM.dataA[i].w << endl;
+			cout << "dataA: " << "Index: " << ssbo_CPUMEM.dataA[i].x << ", Value: " << ssbo_CPUMEM.dataA[i].y << endl;
+			fout << "dataA: " << "Index: " << ssbo_CPUMEM.dataA[i].x << ", Value: " << ssbo_CPUMEM.dataA[i].y << endl;
 		}
+		cout << "Array is sorted: " << std::boolalpha << check_if_array_sorted(ssbo_CPUMEM.dataA, BUFFCOUNT - 1) << endl;
+		fout << "Array is sorted: " << std::boolalpha << check_if_array_sorted(ssbo_CPUMEM.dataA, BUFFCOUNT - 1) << endl;
+		fout.close();
 
-		cout << "Array is sorted: " <<  std::boolalpha << check_if_array_sorted(ssbo_CPUMEM.dataA, BUFFCOUNT-1) << endl;
+		
 
 	}
 
