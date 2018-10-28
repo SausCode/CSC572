@@ -256,10 +256,6 @@ public:
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 		}
 		
-		////print data after compute shader
-		//cout << endl << endl << "BUFFER AFTER COMPUTE SHADER" << endl << endl;
-		////for (int i = 0; i < BUFFCOUNT; i++)
-		//cout << "dataB: " << ssbo_CPUMEM.dataB[0].y << endl;
 		cout << endl << endl;
 		fout << endl << endl;
 		cout << "BUFFER AFTER COMPUTE SHADER" << endl;
@@ -271,9 +267,6 @@ public:
 		cout << "Array is sorted: " << std::boolalpha << check_if_array_sorted(ssbo_CPUMEM.dataA, BUFFCOUNT - 1) << endl;
 		fout << "Array is sorted: " << std::boolalpha << check_if_array_sorted(ssbo_CPUMEM.dataA, BUFFCOUNT - 1) << endl;
 		fout.close();
-
-		
-
 	}
 
 	bool check_if_array_sorted(vec4 data[], int length) {

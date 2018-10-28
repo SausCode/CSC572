@@ -1,0 +1,16 @@
+Feel free to change num_heads to anything. Currently at 10, but can be up to 125 without modifications.
+
+Also, looping through 100 lights in forward shading.
+
+Hit enter to switch between defered and forward shading.
+Hit B to toggle bloom on/off (only works in defered rendering).
+
+Non Deferred:
+
+.0076
+
+Deferred
+
+.0063
+
+(Included video as it is working on my desktop, but weird artifacting on laptop)
