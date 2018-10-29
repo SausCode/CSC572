@@ -20,7 +20,24 @@ void main()
     vec3 FragPos = texture(gPosition, fragTex).rgb;
     vec3 Normal = texture(gNormal, fragTex).rgb;
     vec3 Diffuse = texture(gColor, fragTex).rgb;
-    float AmbientOcclusion = texture(ambient_occlusion, fragTex).r;
+    vec3 ambient_occlusion_color = texture(ambient_occlusion, fragTex).rgb;
+
+	vec2 texelSize = 1.0 / vec2(textureSize(ambient_occlusion, 0));
+    vec3 result = vec3(0);
+	float size = 0;
+    for (int x = -2; x < 2; ++x) 
+    {
+        for (int y = -2; y < 2; ++y) 
+        {
+			size++;
+            vec2 offset = vec2(float(x), float(y)) * texelSize;
+            result += texture(ambient_occlusion, fragTex + offset).xyz;
+        }
+    }
+	color.xyz = result/(size);
+	color.a = 1;
+
+	float AmbientOcclusion = color.x;
     
     // blinn-phong (in view-space)
     vec3 ambient = vec3(0.3 * Diffuse * AmbientOcclusion); // here we add occlusion factor
@@ -40,21 +57,5 @@ void main()
     specular *= attenuation;
     lighting += diffuse + specular;
 
-    vec4 FragColor = vec4(lighting, 1.0);
-
-    vec2 texelSize = 1.0 / vec2(textureSize(ambient_occlusion, 0));
-    vec3 result = vec3(0);
-	float size = 0;
-    for (int x = -3; x < 3; ++x) 
-    {
-        for (int y = -3; y < 3; ++y) 
-        {
-			size++;
-            vec2 offset = vec2(float(x), float(y)) * texelSize;
-            result += texture(ambient_occlusion, fragTex + offset).xyz;
-        }
-    }
-	color.xyz = result/(size);
-	color.a = 1;
-	color.xyz = FragColor.xyz * color.xyz;
+    color = vec4(lighting, 1.0);
 }

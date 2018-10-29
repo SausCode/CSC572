@@ -16,7 +16,7 @@ int kernelSize = 64;
 float radius = 0.25;
 float bias = 0.025;
 
-in mat4 projection;
+uniform mat4 projection;
 
 void main()
 {
@@ -33,7 +33,7 @@ void main()
     mat3 TBN = mat3(tangent, bitangent, normal);
     // iterate over the sample kernel and calculate occlusion factor
     float occlusion = 0.0;
-    for(int i = 0; i < kernelSize; ++i)
+    for(int i = 0; i < kernelSize; i++)
     {
         // get sample position
         vec3 sampleVec = TBN * samples[i]; // from tangent to view-space

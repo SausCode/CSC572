@@ -20,6 +20,8 @@
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 
 #include <cstdlib>
 #include <ctime>
@@ -126,27 +128,37 @@ public:
 		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
 		{
 			light_pos.x += 1;
+			print_light_pos();
 		}
 		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
 		{
 			light_pos.x -= 1;
+			print_light_pos();
 		}
 		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 		{
 			light_pos.z += 1;
+			print_light_pos();
 		}
 		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		{
 			light_pos.z -= 1;
+			print_light_pos();
 		}
 		if (key == GLFW_KEY_KP_ADD && action == GLFW_PRESS)
 		{
 			light_pos.y += 1;
+			print_light_pos();
 		}
 		if (key == GLFW_KEY_KP_SUBTRACT && action == GLFW_PRESS)
 		{
 			light_pos.y -= 1;
+			print_light_pos();
 		}
+	}
+
+	void print_light_pos() {
+		std::cout << "Light position: " << glm::to_string(light_pos) << std::endl;
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -220,6 +232,7 @@ public:
 		ssao_prog->addUniform("V");
 		ssao_prog->addUniform("M");
 		ssao_prog->addUniform("samples");
+		ssao_prog->addUniform("projection");
 		ssao_prog->addAttribute("vertPos");
 		ssao_prog->addAttribute("vertTex");
 
@@ -256,12 +269,12 @@ public:
 		// front
 		int verccount = 0;
 
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 0.0;
 		rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
-		rectangle_vertices[verccount++] = 0.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
+		rectangle_vertices[verccount++] = -1.0, rectangle_vertices[verccount++] = 1.0, rectangle_vertices[verccount++] = 0.0;
 
 
 		//actually memcopy the data - only do this once
@@ -444,15 +457,14 @@ public:
 		glUseProgram(blur_prog->pid);
 		glGenFramebuffers(1, &blur_fb);
 		glBindFramebuffer(GL_FRAMEBUFFER, blur_fb);
-		// The texture we're going to render to
 		glGenTextures(1, &FBO_occlusion);
-		// "Bind" the newly created texture : all future texture functions will modify this texture
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBO_occlusion);
-		// Give an empty image to OpenGL ( the last "0" )
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
-		// Poor filtering. Needed !
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
 		// Set "renderedTexture" as our colour attachement #0
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, FBO_occlusion, 0);
 
@@ -487,7 +499,7 @@ public:
 	void update_light() {
 		light_color.x = sin(glfwGetTime());
 		light_color.y = cos(glfwGetTime());
-		light_color.z = tan(glfwGetTime());
+		light_color.z = -sin(glfwGetTime());
 	}
 	void render_to_screen()
 	{
@@ -496,11 +508,8 @@ public:
 		float aspect = width / (float)height;
 		glViewport(0, 0, width, height);
 
-		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M, V, S, T;
-
+		glm::mat4 M, V, S, T, P;
+		P = glm::perspective((float)(3.14159 / 4.), (float)((float)width / (float)height), 0.1f, 1000.0f);
 		V = glm::mat4(1);
 
 		// Clear framebuffer.
@@ -532,8 +541,8 @@ public:
 			glUniform3fv(blur_prog->getUniform("light_pos"), 1, &light_pos.x);
 		}
 
-		M = glm::scale(glm::mat4(1), glm::vec3(1.2, 1, 1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		glUniformMatrix4fv(blur_prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		M = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
+		glUniformMatrix4fv(blur_prog->getUniform("P"), 1, GL_FALSE, &P[0][0]);
 		glUniformMatrix4fv(blur_prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
 		glUniformMatrix4fv(blur_prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glBindVertexArray(VertexArrayIDBox);
@@ -578,11 +587,8 @@ public:
 		float aspect = width / (float)height;
 		glViewport(0, 0, width, height);
 
-		auto P = std::make_shared<MatrixStack>();
-		P->pushMatrix();	
-		P->perspective(70., width, height, 0.1, 100.0f);
-		glm::mat4 M,V,S,T;		
-	
+		glm::mat4 M, V, S, T, P;
+		P = glm::perspective((float)(3.14159 / 4.), (float)((float)width / (float)height), 0.1f, 1000.0f);
 		V = glm::mat4(1);
 		
 		// Clear framebuffer.
@@ -604,8 +610,14 @@ public:
 			glUniform3fv(ssao_prog->getUniform("samples"), 64, &ssaoKernel[0].x);
 		}
 
-		M = glm::scale(glm::mat4(1),glm::vec3(1.2,1,1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		glUniformMatrix4fv(ssao_prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		loc = glGetUniformLocation(ssao_prog->pid, "projection");
+		if (loc != -1)
+		{
+			glUniformMatrix4fv(ssao_prog->getUniform("projection"), 1, GL_FALSE, &P[0][0]);
+		}
+
+		M = glm::scale(glm::mat4(1),glm::vec3(1,1,1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
+		glUniformMatrix4fv(ssao_prog->getUniform("P"), 1, GL_FALSE, &P[0][0]);
 		glUniformMatrix4fv(ssao_prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
 		glUniformMatrix4fv(ssao_prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glBindVertexArray(VertexArrayIDBox);

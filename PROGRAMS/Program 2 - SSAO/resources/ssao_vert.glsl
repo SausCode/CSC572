@@ -6,11 +6,9 @@ uniform mat4 P;
 uniform mat4 V;
 uniform mat4 M;
 out vec2 fragTex;
-out mat4 projection;
 
 void main()
 {
-	gl_Position = P * V * M * vertPos;
+	gl_Position = vertPos;
 	fragTex = vertTex;
-	projection = P;
 }
