@@ -9,8 +9,6 @@ in vec2 fragTex;
 in vec3 fragNor;
 in vec4 fragViewPos;
 
-uniform vec3 campos;
-
 layout(location = 0) uniform sampler2D tex;
 layout(location = 1) uniform sampler2D tex2;
 
