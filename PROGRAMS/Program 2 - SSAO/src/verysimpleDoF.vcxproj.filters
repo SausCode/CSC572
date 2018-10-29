@@ -43,10 +43,10 @@
     <None Include="..\resources\ssao_vert.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\blur_frag">
+    <None Include="..\resources\blur_frag.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\blur_vert">
+    <None Include="..\resources\blur_vert.glsl">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

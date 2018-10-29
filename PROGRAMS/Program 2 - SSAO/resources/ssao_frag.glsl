@@ -1,10 +1,11 @@
-#version 450 core 
-out vec4 color;
+#version 450 core
 in vec2 fragTex;
 layout(location = 0) uniform sampler2D gPosition;
 layout(location = 1) uniform sampler2D gNormal;
 layout(location = 2) uniform sampler2D gAlbedoSpec;
 layout(location = 3) uniform sampler2D noiseTexture;
+
+layout(location = 0) out vec4 color;
 
 uniform vec3 samples[64];
 
@@ -12,13 +13,15 @@ uniform vec3 samples[64];
 const vec2 noiseScale = vec2(640*3/4.0, 480*3/4.0); // screen = 1280x720
 
 int kernelSize = 64;
-float radius = 0.5;
+float radius = 0.25;
 float bias = 0.025;
 
 in mat4 projection;
 
 void main()
 {
+	/* Used from example - https://learnopengl.com/Advanced-Lighting/SSAO*/
+
     // get input for SSAO algorithm
     vec3 fragPos = texture(gPosition, fragTex).xyz;
     vec3 normal = normalize(texture(gNormal, fragTex).rgb);
@@ -48,16 +51,12 @@ void main()
         // range check & accumulate
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         if (sampleDepth >= sampleVec.z + bias) {
-			occlusion += 1.0;
+			occlusion += 1.0 * rangeCheck;
 		} else {
-			occlusion += 0.0;
-		}           
+			occlusion += 0.0 * rangeCheck;
+		}
     }
     occlusion = 1.0 - (occlusion / kernelSize);
-    
     color.rgb = vec3(occlusion);
-
-	//color.rgb = albedo;
-
 	color.a = 1;
 }

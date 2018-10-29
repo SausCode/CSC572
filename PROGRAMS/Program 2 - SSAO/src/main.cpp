@@ -35,7 +35,7 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-	std::shared_ptr<Program> prog, prog2, blur_prog;
+	std::shared_ptr<Program> geometry_prog, ssao_prog, blur_prog, shading_prog;
 
 	// Shape to be used (from obj file)
 	shared_ptr<Shape> shape,sponza;
@@ -45,7 +45,7 @@ public:
 
 	//texture for sim
 	GLuint TextureEarth;
-	GLuint TextureMoon, FBO_position, FBO_normal, FBO_albedo, noiseTexture, fb, depth_rb;
+	GLuint TextureMoon, FBO_position, FBO_normal, FBO_albedo, noiseTexture, fb, depth_rb, blur_fb, FBO_occlusion, FBO_ssao_color;
 
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
 	
@@ -54,6 +54,12 @@ public:
 
 	// Data necessary to give our triangle to OpenGL
 	GLuint VertexBufferID;
+
+	bool blur_bool = false;
+	bool party_time = false;
+
+	vec3 light_color = vec3(0);
+	vec3 light_pos = vec3(0);
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -109,6 +115,38 @@ public:
 		{
 			mycam.down = 0;
 		}
+		if (key == GLFW_KEY_B && action == GLFW_PRESS)
+		{
+			blur_bool = !blur_bool;
+		}
+		if (key == GLFW_KEY_P && action == GLFW_PRESS)
+		{
+			party_time = !party_time;
+		}
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		{
+			light_pos.x += 1;
+		}
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		{
+			light_pos.x -= 1;
+		}
+		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+		{
+			light_pos.z += 1;
+		}
+		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+		{
+			light_pos.z -= 1;
+		}
+		if (key == GLFW_KEY_KP_ADD && action == GLFW_PRESS)
+		{
+			light_pos.y += 1;
+		}
+		if (key == GLFW_KEY_KP_SUBTRACT && action == GLFW_PRESS)
+		{
+			light_pos.y -= 1;
+		}
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -151,39 +189,39 @@ public:
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
 		// Initialize the GLSL program.
-		prog = make_shared<Program>();
-		prog->setVerbose(true);
-		prog->setShaderNames(resourceDirectory + "/geometry_vert.glsl", resourceDirectory + "/geometry_frag.glsl");
-		if (! prog->init())
+		geometry_prog = make_shared<Program>();
+		geometry_prog->setVerbose(true);
+		geometry_prog->setShaderNames(resourceDirectory + "/geometry_vert.glsl", resourceDirectory + "/geometry_frag.glsl");
+		if (!geometry_prog->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			exit(1);
 		}
-		prog->init();
-		prog->addUniform("P");
-		prog->addUniform("V");
-		prog->addUniform("M");
-		prog->addUniform("campos");
-		prog->addAttribute("vertPos");
-		prog->addAttribute("vertNor");
-		prog->addAttribute("vertTex");
+		geometry_prog->init();
+		geometry_prog->addUniform("P");
+		geometry_prog->addUniform("V");
+		geometry_prog->addUniform("M");
+		geometry_prog->addUniform("campos");
+		geometry_prog->addAttribute("vertPos");
+		geometry_prog->addAttribute("vertNor");
+		geometry_prog->addAttribute("vertTex");
 
 
-		prog2 = make_shared<Program>();
-		prog2->setVerbose(true);
-		prog2->setShaderNames(resourceDirectory + "/ssao_vert.glsl", resourceDirectory + "/ssao_frag.glsl");
-		if (!prog2->init())
+		ssao_prog = make_shared<Program>();
+		ssao_prog->setVerbose(true);
+		ssao_prog->setShaderNames(resourceDirectory + "/ssao_vert.glsl", resourceDirectory + "/ssao_frag.glsl");
+		if (!ssao_prog->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
 			//exit(1);
 		}
-		prog2->init();
-		prog2->addUniform("P");
-		prog2->addUniform("V");
-		prog2->addUniform("M");
-		prog2->addUniform("samples");
-		prog2->addAttribute("vertPos");
-		prog2->addAttribute("vertTex");
+		ssao_prog->init();
+		ssao_prog->addUniform("P");
+		ssao_prog->addUniform("V");
+		ssao_prog->addUniform("M");
+		ssao_prog->addUniform("samples");
+		ssao_prog->addAttribute("vertPos");
+		ssao_prog->addAttribute("vertTex");
 
 		blur_prog = make_shared<Program>();
 		blur_prog->setVerbose(true);
@@ -197,7 +235,8 @@ public:
 		blur_prog->addUniform("P");
 		blur_prog->addUniform("V");
 		blur_prog->addUniform("M");
-		blur_prog->addUniform("blur_direction");
+		blur_prog->addUniform("light_color");
+		blur_prog->addUniform("light_pos");
 		blur_prog->addAttribute("vertPos");
 		blur_prog->addAttribute("vertTex");
 	}
@@ -301,15 +340,15 @@ public:
 		
 		//[TWOTEXTURES]
 		//set the 2 textures to the correct samplers in the fragment shader:
-		GLuint Tex1Location = glGetUniformLocation(prog->pid, "tex");//tex, tex2... sampler in the fragment shader
-		GLuint Tex2Location = glGetUniformLocation(prog->pid, "tex2");
+		GLuint Tex1Location = glGetUniformLocation(geometry_prog->pid, "tex");//tex, tex2... sampler in the fragment shader
+		GLuint Tex2Location = glGetUniformLocation(geometry_prog->pid, "tex2");
 		// Then bind the uniform samplers to texture units:
-		glUseProgram(prog->pid);
+		glUseProgram(geometry_prog->pid);
 		glUniform1i(Tex1Location, 0);
 		glUniform1i(Tex2Location, 1);
 
 
-		glUseProgram(prog2->pid);
+		glUseProgram(ssao_prog->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glGenFramebuffers(1, &fb);
 		glActiveTexture(GL_TEXTURE0);
@@ -368,6 +407,7 @@ public:
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBO_normal, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBO_albedo, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, noiseTexture, 0);
+
 		//-------------------------
 		glGenRenderbuffers(1, &depth_rb);
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
@@ -379,10 +419,10 @@ public:
 		//Does the GPU support current FBO configuration?
 
 		
-		int Tex1Loc = glGetUniformLocation(prog2->pid, "gPosition");//tex, tex2... sampler in the fragment shader
-		int Tex2Loc = glGetUniformLocation(prog2->pid, "gNormal");
-		int Tex3Loc = glGetUniformLocation(prog2->pid, "gAlbedoSpec");
-		int Tex4Loc = glGetUniformLocation(prog2->pid, "noiseTexture");
+		int Tex1Loc = glGetUniformLocation(ssao_prog->pid, "gPosition");//tex, tex2... sampler in the fragment shader
+		int Tex2Loc = glGetUniformLocation(ssao_prog->pid, "gNormal");
+		int Tex3Loc = glGetUniformLocation(ssao_prog->pid, "gAlbedoSpec");
+		int Tex4Loc = glGetUniformLocation(ssao_prog->pid, "noiseTexture");
 
 		glUniform1i(Tex1Loc, 0);
 		glUniform1i(Tex2Loc, 1);
@@ -400,6 +440,40 @@ public:
 			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glUseProgram(blur_prog->pid);
+		glGenFramebuffers(1, &blur_fb);
+		glBindFramebuffer(GL_FRAMEBUFFER, blur_fb);
+		// The texture we're going to render to
+		glGenTextures(1, &FBO_occlusion);
+		// "Bind" the newly created texture : all future texture functions will modify this texture
+		glBindTexture(GL_TEXTURE_2D, FBO_occlusion);
+		// Give an empty image to OpenGL ( the last "0" )
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+		// Poor filtering. Needed !
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		// Set "renderedTexture" as our colour attachement #0
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, FBO_occlusion, 0);
+
+		// Set the list of draw buffers.
+		GLenum DrawBuffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
+		glDrawBuffers(4, DrawBuffers); // "1" is the size of DrawBuffers
+									   // Always check that our framebuffer is ok
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			cout << "Frame buffer not good" << endl;
+
+		Tex1Loc = glGetUniformLocation(blur_prog->pid, "ambient_occlusion");
+		Tex2Loc = glGetUniformLocation(blur_prog->pid, "gPosition");
+		Tex3Loc = glGetUniformLocation(blur_prog->pid, "gNormal");
+		Tex4Loc = glGetUniformLocation(blur_prog->pid, "gColor");
+
+		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	//*************************************
 	double get_last_elapsed_time()
@@ -410,6 +484,63 @@ public:
 		lasttime = actualtime;
 		return difference;
 		}
+	void update_light() {
+		light_color.x = sin(glfwGetTime());
+		light_color.y = cos(glfwGetTime());
+		light_color.z = tan(glfwGetTime());
+	}
+	void render_to_screen()
+	{
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		float aspect = width / (float)height;
+		glViewport(0, 0, width, height);
+
+		auto P = std::make_shared<MatrixStack>();
+		P->pushMatrix();
+		P->perspective(70., width, height, 0.1, 100.0f);
+		glm::mat4 M, V, S, T;
+
+		V = glm::mat4(1);
+
+		// Clear framebuffer.
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		blur_prog->bind();
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBO_occlusion);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBO_position);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBO_normal);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBO_albedo);
+
+		GLint loc = glGetUniformLocation(blur_prog->pid, "light_color");
+		if (loc != -1)
+		{
+			if (!party_time) {
+				light_color = vec3(1);
+			}
+			glUniform3fv(blur_prog->getUniform("light_color"), 1, &light_color.x);
+		}
+
+		loc = glGetUniformLocation(blur_prog->pid, "light_pos");
+		if (loc != -1)
+		{
+			glUniform3fv(blur_prog->getUniform("light_pos"), 1, &light_pos.x);
+		}
+
+		M = glm::scale(glm::mat4(1), glm::vec3(1.2, 1, 1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
+		glUniformMatrix4fv(blur_prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		glUniformMatrix4fv(blur_prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+		glUniformMatrix4fv(blur_prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		blur_prog->unbind();
+	}
 
 	float lerp(float a, float b, float f)
 	{
@@ -433,9 +564,14 @@ public:
 			ssaoKernel.push_back(sample);
 		}
 	}
+
 	//*************************************
 	void render_to_ssao()
 	{
+		if (blur_bool) {
+			glBindFramebuffer(GL_FRAMEBUFFER, blur_fb);
+		}
+		
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -452,7 +588,7 @@ public:
 		// Clear framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
 
-		prog2->bind();
+		ssao_prog->bind();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBO_position);
 		glActiveTexture(GL_TEXTURE1);
@@ -462,21 +598,26 @@ public:
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, noiseTexture);
 
-		GLint loc = glGetUniformLocation(prog2->pid, "samples");
+		GLint loc = glGetUniformLocation(ssao_prog->pid, "samples");
 		if (loc != -1)
 		{
-			glUniform3fv(prog2->getUniform("samples"), 64, &ssaoKernel[0].x);
+			glUniform3fv(ssao_prog->getUniform("samples"), 64, &ssaoKernel[0].x);
 		}
 
 		M = glm::scale(glm::mat4(1),glm::vec3(1.2,1,1)) * glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, -1));
-		glUniformMatrix4fv(prog2->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-		glUniformMatrix4fv(prog2->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-		glUniformMatrix4fv(prog2->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		glUniformMatrix4fv(ssao_prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+		glUniformMatrix4fv(ssao_prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+		glUniformMatrix4fv(ssao_prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		prog2->unbind();
-		
+		ssao_prog->unbind();
+
+		if (blur_bool) {
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glBindTexture(GL_TEXTURE_2D, FBO_occlusion);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
 	}
 	void render_to_texture() // aka render to framebuffer
 	{
@@ -498,19 +639,19 @@ public:
 
 
 		//bind shader and copy matrices
-		prog->bind();
-		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, &P[0][0]);
-		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
-		glUniform3fv(prog->getUniform("campos"), 1, &mycam.pos.x);
+		geometry_prog->bind();
+		glUniformMatrix4fv(geometry_prog->getUniform("P"), 1, GL_FALSE, &P[0][0]);
+		glUniformMatrix4fv(geometry_prog->getUniform("V"), 1, GL_FALSE, &V[0][0]);
+		glUniform3fv(geometry_prog->getUniform("campos"), 1, &mycam.pos.x);
 
 		//	******		sponza		******
 		float pihalf = 3.1415926 / 2.;
 		M = rotate(mat4(1),pihalf,vec3(0,1,0)) * scale(mat4(1), vec3(2.3, 2.3, 2.3));
-		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		sponza->draw(prog, false);	//draw moon
+		glUniformMatrix4fv(geometry_prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);
+		sponza->draw(geometry_prog, false);	//draw moon
 		
 		//done, unbind stuff
-		prog->unbind();
+		geometry_prog->unbind();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glBindTexture(GL_TEXTURE_2D, FBO_position);
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -554,9 +695,14 @@ int main(int argc, char **argv)
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
+		application->update_light();
 		// Render scene.
 		application->render_to_texture();
 		application->render_to_ssao();
+		if (application->blur_bool) {
+			application->render_to_screen();
+		}
+		
 		
 		// Swap front and back buffers.
 		glfwSwapBuffers(windowManager->getHandle());
