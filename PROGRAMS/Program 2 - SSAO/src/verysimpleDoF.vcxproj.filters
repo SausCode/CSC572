@@ -31,16 +31,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\resources\simple_frag.glsl">
+    <None Include="..\resources\geometry_frag.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\simple_vert.glsl">
+    <None Include="..\resources\geometry_vert.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\vert.glsl">
+    <None Include="..\resources\ssao_frag.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="..\resources\frag_nolight.glsl">
+    <None Include="..\resources\ssao_vert.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\blur_frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\blur_vert">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

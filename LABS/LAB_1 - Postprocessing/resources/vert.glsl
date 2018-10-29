@@ -9,6 +9,6 @@ out vec2 fragTex;
 
 void main()
 {
-gl_Position = P * V * M * vertPos;
-fragTex = vertTex;
+	gl_Position = P * V * M * vertPos;
+	fragTex = vertTex;
 }

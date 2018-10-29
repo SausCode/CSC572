@@ -61,7 +61,7 @@ public:
 	vec2 bloom_direction = vec2(0, 0);
 	vec2 blur_direction = vec2(0, 0);
 
-	bool blur = false;
+	bool blur = true;
 	bool bloom = false;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -243,7 +243,7 @@ public:
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 		// Initialize mesh.
 		shape = make_shared<Shape>();
-		shape->loadMesh(resourceDirectory + "/t800.obj");
+		shape->loadMesh(resourceDirectory + "/sphere.obj");
 		shape->resize(); 
 		shape->init();
 			

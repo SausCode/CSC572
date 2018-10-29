@@ -21,15 +21,16 @@ class camera
 public:
 	glm::vec3 pos;
 	glm::vec3 rot;
-	int w, a, s, d;
+	int w, a, s, d, up, down;
 	camera()
 	{
-		w = a = s = d = 0;
+		w = a = s = d = up = down = 0;
 		pos = rot = glm::vec3(0, 0, 0);
 	}
 	glm::mat4 process()
 	{
 		float going_forward = 0.0;
+		float going_up = 0.0;
 		if (w == 1)
 			going_forward += 0.1;
 		if (s == 1)
@@ -38,12 +39,17 @@ public:
 			rot.y -= 0.1;
 		if (d == 1)
 			rot.y += 0.1;
+		if (up == 1)
+			going_up += 0.1;
+		if (down == 1)
+			going_up -= 0.1;
 		glm::mat4 R = glm::rotate(glm::mat4(1), rot.y, glm::vec3(0, 1, 0));
 
-		glm::vec4 rpos = glm::vec4(0, 0, going_forward, 1);
+		glm::vec4 rpos = glm::vec4(0, going_up, going_forward, 1);
 
 		rpos = R *rpos;
 		pos.x += -rpos.x;
+		pos.y += -rpos.y;
 		pos.z += rpos.z;
 
 		glm::mat4 T = glm::translate(glm::mat4(1), glm::vec3(pos.x, pos.y, pos.z));
