@@ -628,7 +628,7 @@ int main(int argc, char **argv){
 	// and GL context, etc.
 
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(640*3, 480*3);
+	windowManager->init(640*2, 480*2);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 

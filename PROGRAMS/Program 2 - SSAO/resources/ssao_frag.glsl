@@ -10,7 +10,7 @@ layout(location = 0) out vec4 color;
 uniform vec3 samples[64];
 
 // tile noise texture over screen based on screen dimensions divided by noise size
-const vec2 noiseScale = vec2(640*3/4.0, 480*3/4.0); // screen = 1280x720
+const vec2 noiseScale = vec2(640*2/4.0, 480*2/4.0); // screen = 1280x720
 
 int kernelSize = 64;
 float radius = 0.25;
