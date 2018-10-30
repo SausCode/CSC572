@@ -10,8 +10,8 @@ layout(rgba8, binding = 0) uniform image2D img;
 //local group of shaders
 layout (std430, binding=0) volatile buffer shader_data
 { 
-  vec4 dataA[4097];
-  ivec4 dataB[4097];
+  vec4 dataA[2048];
+  ivec4 dataB[99999];
 };
 uniform int sizeofbuffer;
 uniform int odd;
@@ -30,12 +30,14 @@ void main()
 	uint index = gl_GlobalInvocationID.x;
 
 	int workpershaderunit = sizeofbuffer/1024;
+	if (sizeofbuffer % 1024 > 0){
+		workpershaderunit++;
+	}
 	for (uint i = 0; i < workpershaderunit; i++){
 		uint worknum = 1024*i + index;
 		if (worknum >= sizeofbuffer){
 			return;
 		}
-
 		if (odd == 1){
 			if ((worknum % 2) == 1){
 				// odd

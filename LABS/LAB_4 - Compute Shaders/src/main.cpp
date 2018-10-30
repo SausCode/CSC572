@@ -26,7 +26,7 @@ using namespace std;
 using namespace glm;
 shared_ptr<Shape> shape;
 
-#define BUFFCOUNT 4097
+#define BUFFCOUNT 1025
 class ssbo_data
 	{
 	public:
