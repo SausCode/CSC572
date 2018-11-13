@@ -174,6 +174,19 @@ public:
 		if (key == GLFW_KEY_K && action == GLFW_RELEASE)	key_k = 0;
 		if (key == GLFW_KEY_L && action == GLFW_PRESS)		key_l = 1;
 		if (key == GLFW_KEY_L && action == GLFW_RELEASE)	key_l = 0;
+
+		if (key == GLFW_KEY_T ){
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOid);
+	        GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	        int siz = sizeof(ssbo_data);
+	        memcpy(&blurpixels, p, siz);
+	        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	        for (int i = 0; i < SSBOSIZE; i++){
+	        	cout << "Sphere x: " << blurpixels.pixels[i].x << "  sphere y: " << blurpixels.pixels[i].y << endl;
+	        }
+	        blurpixels.pixels[0] = ivec2(1,1);
+	        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &blurpixels, GL_DYNAMIC_COPY);
+		}
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -224,16 +237,6 @@ void compute()
         glDispatchCompute((GLuint)640, (GLuint)480, 1);                //start compute shader
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-
-        
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOid);
-        GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        int siz = sizeof(ssbo_data);
-        memcpy(&blurpixels, p, siz);
-        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-        cout << "pi: " << blurpixels.pixels[0].x << "  pi: " << blurpixels.pixels[1].x << "  pi: " << blurpixels.pixels[1].y << endl;
-        blurpixels.pixels[0] = ivec2(1,1);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &blurpixels, GL_DYNAMIC_COPY);
         
 	}
 
@@ -388,12 +391,11 @@ void compute()
 		shadowProg->addUniform("V");
 		shadowProg->addUniform("M");
 		shadowProg->addAttribute("vertPos");
-
-		CScollect = init_computeshader(resourceDirectory + "/compute.glsl");
 	}
 
 	void initGeom(const std::string& resourceDirectory)
 	{
+
 		sponza = make_shared<Shape>();
 		string sponzamtl = resourceDirectory + "/sponza/";
 		sponza->loadMesh(resourceDirectory + "/sponza/sponza.obj", &sponzamtl, stbi_load);
@@ -553,6 +555,8 @@ void compute()
 		glGenTextures(1, &FBOtex);
 		init_screen_texture_fbo();
 
+		CScollect = init_computeshader(resourceDirectory + "/compute.glsl");
+
 		//make an SSBO
         for (int ii = 0; ii < SSBOSIZE; ii++)
             blurpixels.pixels[ii] = ivec2(0,0);                
@@ -561,7 +565,7 @@ void compute()
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, SSBOid);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &blurpixels, GL_DYNAMIC_COPY);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind		
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	}
 	//*************************************
 	double get_last_elapsed_time()

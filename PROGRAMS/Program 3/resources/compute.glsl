@@ -14,6 +14,7 @@ void main()
     if (mask_color.r > .5){
     	int index = atomicAdd(pixels[16383].x, 1);
     	if (index >= 16382){
+            pixels[16383].x = 0;
     		return;
     	}
     	pixels[index] = pixel_coords;
