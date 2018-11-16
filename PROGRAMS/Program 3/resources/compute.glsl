@@ -19,5 +19,4 @@ void main()
     	}
     	pixels[index] = pixel_coords;
     }
-     //imageStore(img_input, pixel_coords,vec4(1,1,0,1));
 }

@@ -122,7 +122,7 @@ public:
 	bool show_shadowmap = false;
 
 	ssbo_data blurpixels;
-	GLuint CScollect, SSBOid;
+	GLuint CScollect, CSblur, SSBOid;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -231,13 +231,26 @@ void compute()
         block_index = glGetProgramResourceIndex(CScollect, GL_SHADER_STORAGE_BLOCK, "shader_data");
         GLuint ssbo_binding_point_index = 0;
         glShaderStorageBlockBinding(CScollect, block_index, ssbo_binding_point_index);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
-        
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);        
         glBindImageTexture(0, FBOmask, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
         glDispatchCompute((GLuint)640, (GLuint)480, 1);                //start compute shader
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         
+	}
+
+void compute_blur()
+	{
+        glUseProgram(CSblur);
+        GLuint block_index = 0;
+        block_index = glGetProgramResourceIndex(CSblur, GL_SHADER_STORAGE_BLOCK, "shader_data");
+        GLuint ssbo_binding_point_index = 0;
+        glShaderStorageBlockBinding(CSblur, block_index, ssbo_binding_point_index);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
+        glBindImageTexture(0, FBOmask, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        glDispatchCompute((GLuint)640, (GLuint)480, 1);//start compute shader
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 	}
 
 	void init_screen_texture_fbo()
@@ -259,6 +272,7 @@ void compute()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
+		glGenerateMipmap(GL_TEXTURE_2D);
 		
 		// Generate Position Texture
 		glGenTextures(1, &FBOmask);
@@ -566,6 +580,8 @@ void compute()
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo_data), &blurpixels, GL_DYNAMIC_COPY);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+
+		CSblur = init_computeshader(resourceDirectory + "/compute_blur.glsl");
 	}
 	//*************************************
 	double get_last_elapsed_time()
@@ -840,6 +856,7 @@ int main(int argc, char **argv)
 		application->render_to_shadowmap();
 		application->render_to_texture();
 		application->compute();
+		application->compute_blur();
 		application->render_to_screen();
 		
 		// Swap front and back buffers.
