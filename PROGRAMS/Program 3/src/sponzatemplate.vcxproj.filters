@@ -52,5 +52,11 @@
     <None Include="..\resources\shadow_vert.glsl">
       <Filter>shader</Filter>
     </None>
+    <None Include="..\resources\compute.glsl">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="..\resources\compute_blur.glsl">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

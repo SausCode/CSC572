@@ -247,8 +247,9 @@ void compute_blur()
         GLuint ssbo_binding_point_index = 0;
         glShaderStorageBlockBinding(CSblur, block_index, ssbo_binding_point_index);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
-        glBindImageTexture(0, FBOmask, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-        glDispatchCompute((GLuint)640, (GLuint)480, 1);//start compute shader
+		glBindImageTexture(0, FBOmask, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+		glBindImageTexture(1, FBOtex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        glDispatchCompute(SSBOSIZE, 1, 1);//start compute shader
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 	}
@@ -271,7 +272,7 @@ void compute_blur()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		
 		// Generate Position Texture
@@ -282,12 +283,12 @@ void compute_blur()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_BGRA, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		//NULL means reserve texture memory, but texels are undefined
 		//**** Tell OpenGL to reserve level 0
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		//You must reserve memory for other mipmaps levels as well either by making a series of calls to
 		//glTexImage2D or use glGenerateMipmapEXT(GL_TEXTURE_2D).
 		//Here, we'll use :
@@ -569,6 +570,7 @@ void compute_blur()
 		glGenTextures(1, &FBOtex);
 		init_screen_texture_fbo();
 
+		CSblur = init_computeshader(resourceDirectory + "/compute_blur.glsl");
 		CScollect = init_computeshader(resourceDirectory + "/compute.glsl");
 
 		//make an SSBO
@@ -581,7 +583,7 @@ void compute_blur()
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, SSBOid);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 
-		CSblur = init_computeshader(resourceDirectory + "/compute_blur.glsl");
+		
 	}
 	//*************************************
 	double get_last_elapsed_time()

@@ -93,4 +93,8 @@ void main()
 	color.a = 1.0f;
 
 	mask = vec4(sphereon,0,0,1);
+
+	if (sphereon > .5) {
+		color.rgb = vec3(0);
+	}
 }
