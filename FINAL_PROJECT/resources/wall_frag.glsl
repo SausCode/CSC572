@@ -12,6 +12,7 @@ in vec4 worldPos;
 
 layout(location = 0) uniform sampler2D tex;
 layout(location = 1) uniform sampler2D tex2;
+layout(location = 2) uniform sampler2D tex3;
 
 uniform vec4 uScale;
 uniform vec4 uBias;
@@ -22,7 +23,8 @@ void main()
 {
 	vec3 texturecolor = texture(tex, fragTex).rgb;
 	vec3 normalfromtex = texture(tex2, fragTex).rgb;
-	vec3 texturenormal = (normalfromtex+vec3(1,1,1));
+	vec3 ghost_texture = texture(tex3, fragTex).rgb;
+	vec3 texturenormal = (normalfromtex + vec3(1, 1, 1));
 	texturenormal = texturenormal*0.5;
 	vec3 ey = normalize(fragNor);
 	vec3 ez = vec3(0,0,1);
@@ -31,6 +33,9 @@ void main()
 	vec3 readynormal = normalize(TBN*texturenormal);
 	pos_out = worldPos;
 	norm_out = vec4(readynormal, 1);
+
+	pos_out.rgb = ghost_texture;
+	pos_out.a = 1;
 
 	color = vec4(0.0);
 	// 3x3 Gaussian blur

@@ -49,7 +49,7 @@ public:
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture;
+	GLuint wall_texture, wall_normal_texture, ghost_texture;
 
 	// textures for position, color, and normal
 	GLuint fb, depth_rb, FBOpos, FBOcol, FBOnorm;
@@ -63,6 +63,18 @@ public:
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
     
     double mouse_posX, mouse_posY;
+
+	float uGhostCount = 4;
+	float uGhostSpacing = .1f;
+	// 2.0
+	float uGhostThreshold = -1.0f;
+	float uHaloRadius = 0.4f;
+	float uHaloThickness = 0.1f;
+	float uHaloThreshold = 0.5f;
+	float uHaloAspectRatio = 1.0f;
+	float uChromaticAberration = 0.01f;
+	float uDownsample = 1.0f;
+	float debug_on = 1.0f;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -78,6 +90,19 @@ public:
 		if (key == GLFW_KEY_A && action == GLFW_PRESS)
 		{
 			mycam.pos.x += 1;
+		}
+		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+		{
+			uHaloThreshold += .1;
+			cout << uHaloThreshold << endl;
+		}
+		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
+		{
+			uHaloThreshold += -.1;
+		}
+		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+		{
+			debug_on = debug_on > .5 ? 0 : 1;
 		}
 	}
 
@@ -166,7 +191,14 @@ public:
 		prog_deferred->init();
         prog_deferred->addUniform("uGhostCount");
         prog_deferred->addUniform("uGhostSpacing");
-        prog_deferred->addUniform("uGhostThreshold");
+		prog_deferred->addUniform("uGhostThreshold");
+		prog_deferred->addUniform("uHaloRadius");
+		prog_deferred->addUniform("uHaloThickness");
+		prog_deferred->addUniform("uHaloThreshold");
+		prog_deferred->addUniform("uHaloAspectRatio");
+		prog_deferred->addUniform("uChromaticAberration");
+		prog_deferred->addUniform("uDownsample");
+		prog_deferred->addUniform("debug_on");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
     }
@@ -265,16 +297,31 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+
+		str = resourceDirectory + "/ghost_color_gradient.jpg";
+		strcpy(filepath, str.c_str());
+		data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &ghost_texture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, ghost_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
         
         //[TWOTEXTURES]
         //set the 2 textures to the correct samplers in the fragment shader:
         GLuint Tex1Location = glGetUniformLocation(prog_wall->pid, "tex");
-        GLuint Tex2Location = glGetUniformLocation(prog_wall->pid, "tex2");
+		GLuint Tex2Location = glGetUniformLocation(prog_wall->pid, "tex2");
+		GLuint Tex3Location = glGetUniformLocation(prog_wall->pid, "tex3");
 
         // Then bind the uniform samplers to texture units:
         glUseProgram(prog_wall->pid);
         glUniform1i(Tex1Location, 0);
-        glUniform1i(Tex2Location, 1);
+		glUniform1i(Tex2Location, 1);
+		glUniform1i(Tex3Location, 2);
 
 		glUseProgram(prog_deferred->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -384,6 +431,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, wall_texture);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, ghost_texture);
 
 		prog_wall->bind();
 
@@ -436,10 +485,16 @@ public:
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glBindVertexArray(VertexArrayIDBox);
 
-		glUniform1i(prog_deferred->getUniform("uGhostCount"), 4);
-		glUniform1f(prog_deferred->getUniform("uGhostSpacing"), .1f);
-		glUniform1f(prog_deferred->getUniform("uGhostThreshold"), 0.5f);
-
+		glUniform1i(prog_deferred->getUniform("uGhostCount"), uGhostCount);
+		glUniform1f(prog_deferred->getUniform("uGhostSpacing"), uGhostSpacing);
+		glUniform1f(prog_deferred->getUniform("uGhostThreshold"), uGhostThreshold);
+		glUniform1f(prog_deferred->getUniform("uHaloRadius"), uHaloRadius);
+		glUniform1f(prog_deferred->getUniform("uHaloThickness"), uHaloThickness);
+		glUniform1f(prog_deferred->getUniform("uHaloThreshold"), uHaloThreshold);
+		glUniform1f(prog_deferred->getUniform("uHaloAspectRatio"), uHaloAspectRatio);
+		glUniform1f(prog_deferred->getUniform("uChromaticAberration"), uChromaticAberration);
+		glUniform1f(prog_deferred->getUniform("uDownsample"), uDownsample);
+		glUniform1f(prog_deferred->getUniform("debug_on"), debug_on);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
 	}
@@ -474,7 +529,6 @@ int main(int argc, char **argv)
 
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
-	
 
 	// Loop until the user closes the window.
 	while (! glfwWindowShouldClose(windowManager->getHandle()))

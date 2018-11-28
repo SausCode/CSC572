@@ -58,7 +58,7 @@
     <None Include="..\resources\compute_blur.glsl">
       <Filter>shader</Filter>
     </None>
-    <None Include="compute_blur_second.glsl">
+    <None Include="..\resources\compute_blur_second.glsl">
       <Filter>shader</Filter>
     </None>
   </ItemGroup>

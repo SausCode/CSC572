@@ -17,7 +17,9 @@ void main()
 			continue;
 		}
 		vec3 col = imageLoad(tex_input, texcoords + ivec2(0, i)).rgb;
-		color.rgb += col * 1. / abs(i);
+		if (!(col.r < .1 && col.g < .1 && col.b < .1)) {
+			color.rgb += col * 1. / abs(i);
+		}
 	}
 	/*vec4 tex_color = imageLoad(tex_input, texcoords);*/
 	//imageStore(img_input, texcoords, color);
