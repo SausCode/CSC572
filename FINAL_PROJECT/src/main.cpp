@@ -82,22 +82,29 @@ public:
 		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
-
-		if (key == GLFW_KEY_D && action == GLFW_PRESS)
+		if (key == GLFW_KEY_W && action == GLFW_PRESS)
 		{
-			mycam.pos.x -= 1;
+			uGhostThreshold += .1;
 		}
-		if (key == GLFW_KEY_A && action == GLFW_PRESS)
+		if (key == GLFW_KEY_S && action == GLFW_PRESS)
 		{
-			mycam.pos.x += 1;
+			uGhostThreshold -= .1;
+		}
+		if (key == GLFW_KEY_I && action == GLFW_PRESS)
+		{
+			uGhostSpacing += .1;
+		}
+		if (key == GLFW_KEY_K && action == GLFW_PRESS)
+		{
+			uGhostSpacing -= .1;
 		}
 		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 		{
-			uHaloThreshold += .1;
+			uGhostCount += 1;
 		}
 		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		{
-			uHaloThreshold += -.1;
+			uGhostCount += -1;
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 		{

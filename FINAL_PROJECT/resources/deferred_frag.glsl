@@ -96,6 +96,9 @@ void main()
 	if (debug_on > .5) {
 		color.rgb = texturecolor;
 	}
+	else{
+		color.rgb = vec3(0);
+	}
 	color.rgb += SampleGhosts(uv, uGhostThreshold);
 	color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
 
