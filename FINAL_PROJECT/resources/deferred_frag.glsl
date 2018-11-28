@@ -1,7 +1,7 @@
 #version 430
 
 #define GHOST_TINT_PER_SAMPLE 1 // Apply txGhostGradientColor inside the sample loop instead of at the end.
-#define DISABLE_CHROMATIC_ABERRATION 1 // Takes 3x fewer samples.
+#define DISABLE_CHROMATIC_ABERRATION 0 // Takes 3x fewer samples.
 
 out vec4 color;
 in vec2 fragTex;
