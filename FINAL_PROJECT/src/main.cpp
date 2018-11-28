@@ -24,8 +24,6 @@
 using namespace std;
 using namespace glm;
 
-#define ssbo_size 2048
-
 #ifdef __WIN32
 	// Use dedicated GPU on windows
 	extern "C"
@@ -33,12 +31,6 @@ using namespace glm;
 	  __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 	}
 #endif
-
-class ssbo_data
-{
-public:
-	ivec4 angle_list[ssbo_size];
-};
 
 class Application : public EventCallbacks
 {
@@ -71,10 +63,6 @@ public:
 	GLuint VertexArrayIDBox, VertexBufferIDBox, VertexBufferTex;
     
     double mouse_posX, mouse_posY;
-	int pass_number = 1;
-
-	ssbo_data ssbo_CPUMEM;
-	GLuint ssbo_GPU_id;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -176,6 +164,9 @@ public:
 		}
 
 		prog_deferred->init();
+        prog_deferred->addUniform("uGhostCount");
+        prog_deferred->addUniform("uGhostSpacing");
+        prog_deferred->addUniform("uGhostThreshold");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
     }
@@ -397,7 +388,6 @@ public:
 		prog_wall->bind();
 
 		// WALLS
-		// Top Walls
 		T = glm::translate(glm::mat4(1), glm::vec3(0,0,0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
 		R = glm::rotate(glm::mat4(1), (float)pi, glm::vec3(0,0,1));
@@ -411,49 +401,6 @@ public:
 		glUniform1i(prog_wall->getUniform("uSrcLevel"), 0);
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
-
-		// T = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0.9, 0));
-		// M = T * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-
-		// // Mid wall 1
-		// T = glm::translate(glm::mat4(1), glm::vec3(-.5, -0.1, 0));
-		// S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
-		// M = T * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-
-		// // Mid wall 2
-		// T = glm::translate(glm::mat4(1), glm::vec3(-.5, 0.1, 0));
-		// S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
-		// R = glm::rotate(glm::mat4(1), pi, glm::vec3(0, 0, 1));
-		// M = T * R * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-
-		// // Bottom Walls
-		// T = glm::translate(glm::mat4(1), glm::vec3(0.5, -.9, 0));
-		// S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
-		// M = T * R * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-		// T = glm::translate(glm::mat4(1), glm::vec3(-0.5, -.9, 0));
-		// M = T * R * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-
-		// // Right Walls
-		// T = glm::translate(glm::mat4(1), glm::vec3(0.9, 0.5, 0));
-		// S = glm::scale(glm::mat4(1), glm::vec3(0.5, 0.1, 1));
-		// R = glm::rotate(glm::mat4(1), -pi_half, glm::vec3(0, 0, 1));
-		// M = T * R * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
-		// T = glm::translate(glm::mat4(1), glm::vec3(0.9, -0.5, 0));
-		// M = T * R * S;
-		// glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
-		// wall->draw(prog_wall);
 
 		//done, unbind stuff
 		prog_wall->unbind();
@@ -488,6 +435,11 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOnorm);
 		glBindVertexArray(VertexArrayIDBox);
+
+		glUniform1i(prog_deferred->getUniform("uGhostCount"), 4);
+		glUniform1f(prog_deferred->getUniform("uGhostSpacing"), .1f);
+		glUniform1f(prog_deferred->getUniform("uGhostThreshold"), 0.5f);
+
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
 	}
