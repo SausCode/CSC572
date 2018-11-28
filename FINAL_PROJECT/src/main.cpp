@@ -74,7 +74,14 @@ public:
 	float uHaloAspectRatio = 1.0f;
 	float uChromaticAberration = 0.01f;
 	float uDownsample = 1.0f;
-	int debug_on = 1;
+	int debug_on = 0;
+
+	int current_image_file = 0;
+
+	float texture_x_offset = 0.0;
+
+	std::vector<std::string> image_files;
+	std::string resourceDirectory;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -104,12 +111,69 @@ public:
 		}
 		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		{
-			uGhostCount += -1;
+			uGhostCount -= .1;
+		}
+		if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+		{
+			uHaloRadius += .1;
+		}
+		if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+		{
+			uHaloRadius -= .1;
+		}
+		if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+		{
+			uHaloThreshold += .1;
+		}
+		if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+		{
+			uHaloThreshold -= .1;
+		}
+		if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+		{
+			uHaloAspectRatio += .1;
+		}
+		if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+		{
+			uHaloAspectRatio -= .1;
+		}
+		if (key == GLFW_KEY_A && action == GLFW_PRESS)
+		{
+			texture_x_offset -= .1;
+		}
+		if (key == GLFW_KEY_D && action == GLFW_PRESS)
+		{
+			texture_x_offset += .1;
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 		{
-			debug_on = debug_on == 1 ? 0 : 1;
+			debug_on += 1;
+			if (debug_on > 4){
+				debug_on = 0;
+			}
 		}
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		{
+			current_image_file -= 1;
+			if (current_image_file < 0){
+				current_image_file = 0;
+			}
+			initGeom(resourceDirectory);
+		}
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		{
+			current_image_file += 1;
+			if (current_image_file > image_files.size()-1){
+				current_image_file = image_files.size()-1;
+			}
+			initGeom(resourceDirectory);
+		}		
+	}
+
+	void init_image_files(std::string resourceDirectory){
+		image_files.push_back(resourceDirectory + "/mountains.jpg");
+        image_files.push_back(resourceDirectory + "/autumn_scene.jpg");
+        image_files.push_back(resourceDirectory + "/grass.jpg");
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -277,8 +341,7 @@ public:
 		char filepath[1000];
 
         //texture
-        //string str = resourceDirectory + "/lvl1.jpg";
-        string str = resourceDirectory + "/mountains.jpg";
+        string str = image_files[current_image_file];
         strcpy(filepath, str.c_str());
         unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
         glGenTextures(1, &wall_texture);
@@ -443,7 +506,7 @@ public:
 		prog_wall->bind();
 
 		// WALLS
-		T = glm::translate(glm::mat4(1), glm::vec3(0,0,0));
+		T = glm::translate(glm::mat4(1), glm::vec3(texture_x_offset,0,0));
 		S = glm::scale(glm::mat4(1), glm::vec3(1, 1, 1));
 		R = glm::rotate(glm::mat4(1), (float)pi, glm::vec3(0,0,1));
 		M = T * R * S;
@@ -500,7 +563,7 @@ public:
 		glUniform1f(prog_deferred->getUniform("uHaloAspectRatio"), uHaloAspectRatio);
 		glUniform1f(prog_deferred->getUniform("uChromaticAberration"), uChromaticAberration);
 		glUniform1f(prog_deferred->getUniform("uDownsample"), uDownsample);
-		glUniform1f(prog_deferred->getUniform("debug_on"), debug_on);
+		glUniform1i(prog_deferred->getUniform("debug_on"), debug_on);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
 	}
@@ -533,6 +596,9 @@ int main(int argc, char **argv)
 	// This is the code that will likely change program to program as you
 	// may need to initialize or set up different data and state
 
+	application->resourceDirectory = resourceDir;
+
+	application->init_image_files(resourceDir);
 	application->init(resourceDir);
 	application->initGeom(resourceDir);
 

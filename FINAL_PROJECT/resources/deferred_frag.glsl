@@ -21,7 +21,7 @@ uniform float uHaloThreshold;
 uniform float uHaloAspectRatio;
 uniform float uChromaticAberration;
 uniform float uDownsample;
-uniform float debug_on;
+uniform int debug_on;
 
 vec3 ApplyThreshold(in vec3 _rgb, in float _threshold)
 {
@@ -93,15 +93,26 @@ void main()
 	vec3 ghost_col = texture(ghost_tex, fragTex).rgb;
 
 	vec2 uv = vec2(1.0) - fragTex;
-	if (debug_on > .5) {
+	if (debug_on == 0) {
+		color.rgb = texturecolor;
+		color.rgb += SampleGhosts(uv, uGhostThreshold);
+		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
+	}
+	else if (debug_on == 1){
+		color.rgb = vec3(0);
+		color.rgb += SampleGhosts(uv, uGhostThreshold);
+		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
+	}
+	else if (debug_on == 2){
+		color.rgb = vec3(0);
+		color.rgb += SampleGhosts(uv, uGhostThreshold);		
+	}
+	else if (debug_on == 3){
+		color.rgb = vec3(0);
+		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
+	}
+	else if (debug_on == 4){
 		color.rgb = texturecolor;
 	}
-	else{
-		color.rgb = vec3(0);
-	}
-	color.rgb += SampleGhosts(uv, uGhostThreshold);
-	color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
-
-	//color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
 	return;
 }
