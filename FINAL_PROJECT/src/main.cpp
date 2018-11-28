@@ -74,7 +74,7 @@ public:
 	float uHaloAspectRatio = 1.0f;
 	float uChromaticAberration = 0.01f;
 	float uDownsample = 1.0f;
-	float debug_on = 1.0f;
+	int debug_on = 1;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -94,7 +94,6 @@ public:
 		if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 		{
 			uHaloThreshold += .1;
-			cout << uHaloThreshold << endl;
 		}
 		if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		{
@@ -102,7 +101,7 @@ public:
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 		{
-			debug_on = debug_on > .5 ? 0 : 1;
+			debug_on = debug_on == 1 ? 0 : 1;
 		}
 	}
 
