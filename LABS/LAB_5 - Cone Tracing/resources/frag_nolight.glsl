@@ -23,6 +23,12 @@ uniform vec3 lightpos;
 uniform vec3 lightdir;
 uniform mat4 lightSpace;
 
+uniform float steps_for_tracing;
+uniform float cut_off_alpha;
+uniform float reflective_cone_angle;
+uniform float ambient_factor;
+uniform float shadow_factor;
+
 // Evaluates how shadowed a point is using PCF with 5 samples
 // Credit: Sam Freed - https://github.com/sfreed141/vct/blob/master/shaders/phong.frag
 float calcShadowFactor(vec4 lightSpacePosition) {
@@ -138,17 +144,13 @@ void main()
 	
 	float coneHalfAngle = 0.571239; //27 degree
 	vec3 voxelcolor = cone_tracing(normal,worldpos,coneHalfAngle,1,1);
-	voxelcolor += cone_tracing((normal + tangent) / 2, worldpos, coneHalfAngle, 1, 1);
-	voxelcolor += cone_tracing((normal - tangent) / 2, worldpos, coneHalfAngle, 1, 1);
-	voxelcolor += cone_tracing((normal + binorm) / 2, worldpos, coneHalfAngle, 1, 1);
-	voxelcolor += cone_tracing((normal - binorm) / 2, worldpos, coneHalfAngle, 1, 1);
-	voxelcolor = cone_tracing(reflect(-camvec, normal), worldpos, coneHalfAngle / 8, 1, 1)*1.5;
+	voxelcolor += cone_tracing((normal + tangent) / 2, worldpos, coneHalfAngle, steps_for_tracing, cut_off_alpha);
+	voxelcolor += cone_tracing((normal - tangent) / 2, worldpos, coneHalfAngle, steps_for_tracing, cut_off_alpha);
+	voxelcolor += cone_tracing((normal + binorm) / 2, worldpos, coneHalfAngle, steps_for_tracing, cut_off_alpha);
+	voxelcolor += cone_tracing((normal - binorm) / 2, worldpos, coneHalfAngle, steps_for_tracing, cut_off_alpha);
+	voxelcolor += cone_tracing(reflect(-camvec, normal), worldpos, reflective_cone_angle, steps_for_tracing, cut_off_alpha);
 	voxelcolor /= 6;
 
-	
-
-	float magn = length(voxelcolor);
-	color.rgb = texturecolor+voxelcolor;
 	color.rgb = ((diffuseColor + specColor)*ambienceshadowFactor + voxelcolor) * texturecolor;
 	color.a = 1.0;
 }

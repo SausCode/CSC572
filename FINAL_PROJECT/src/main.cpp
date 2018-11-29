@@ -74,6 +74,7 @@ public:
 	float uHaloAspectRatio = 1.0f;
 	float uChromaticAberration = 0.01f;
 	float uDownsample = 1.0f;
+	float uGlobalBrightness = 0.01;
 	int debug_on = 0;
 
 	int current_image_file = 0;
@@ -268,6 +269,7 @@ public:
 		prog_deferred->addUniform("uHaloAspectRatio");
 		prog_deferred->addUniform("uChromaticAberration");
 		prog_deferred->addUniform("uDownsample");
+		prog_deferred->addUniform("uGlobalBrightness");
 		prog_deferred->addUniform("debug_on");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
@@ -580,7 +582,8 @@ public:
 		glUniform1f(prog_deferred->getUniform("uHaloAspectRatio"), uHaloAspectRatio);
 		glUniform1f(prog_deferred->getUniform("uChromaticAberration"), uChromaticAberration);
 		glUniform1f(prog_deferred->getUniform("uDownsample"), uDownsample);
-		glUniform1i(prog_deferred->getUniform("debug_on"), debug_on);
+		glUniform1f(prog_deferred->getUniform("uGlobalBrightness"), uGlobalBrightness);
+		glUniform1i(prog_deferred->getUniform("debug_on"), debug_on); 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
 	}

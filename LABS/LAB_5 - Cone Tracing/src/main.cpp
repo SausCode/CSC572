@@ -126,6 +126,14 @@ public:
 	bool show_shadowmap = false;
 	bool use_integer_textures_against_flickering = true;
 
+	float coneHalfAngle = 0.571239; //27 degree
+
+	float steps_for_tracing = 1;
+	float cut_off_alpha = 1;
+	float reflective_cone_angle = coneHalfAngle / 8;
+	float ambient_factor;
+	float shadow_factor;
+
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -185,6 +193,18 @@ public:
 		if (key == GLFW_KEY_N && action == GLFW_RELEASE)	key_n = 0;
 		if (key == GLFW_KEY_M && action == GLFW_PRESS)		key_m = 1;
 		if (key == GLFW_KEY_M && action == GLFW_RELEASE)	key_m = 0;
+
+		if (key == GLFW_KEY_1 && action == GLFW_PRESS)		steps_for_tracing += 1;
+		if (key == GLFW_KEY_2 && action == GLFW_PRESS)		steps_for_tracing -= 1;
+		if (key == GLFW_KEY_3 && action == GLFW_PRESS)		cut_off_alpha += .1;
+		if (key == GLFW_KEY_4 && action == GLFW_PRESS)		cut_off_alpha -= .1;
+		if (key == GLFW_KEY_5 && action == GLFW_PRESS)		reflective_cone_angle += .1;
+		if (key == GLFW_KEY_6 && action == GLFW_PRESS)		reflective_cone_angle -= .1;
+		if (key == GLFW_KEY_7 && action == GLFW_PRESS)		ambient_factor += .1;
+		if (key == GLFW_KEY_8 && action == GLFW_PRESS)		ambient_factor -= .1;
+		if (key == GLFW_KEY_9 && action == GLFW_PRESS)		shadow_factor += .1;
+		if (key == GLFW_KEY_0 && action == GLFW_PRESS)		shadow_factor -= .1;
+
 	}
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
@@ -457,9 +477,12 @@ public:
 		prog2->addUniform("campos");
 		prog2->addUniform("lightpos");
 		prog2->addUniform("lightdir");
+		prog2->addUniform("steps_for_tracing");
+		prog2->addUniform("cut_off_alpha");
+		prog2->addUniform("reflective_cone_angle");
+		prog2->addUniform("ambient_factor");
+		prog2->addUniform("shadow_factor");
 		
-		
-
 		// Initialize the Shadow Map shader program.
 		shadowProg = make_shared<Program>();
 		shadowProg->setVerbose(true);
@@ -1052,6 +1075,12 @@ public:
 		glUniform3fv(prog2->getUniform("campos"), 1, &mycam.pos.x);
 		glUniform3fv(prog2->getUniform("lightpos"), 1, &primaryLight.position.x);
 		glUniform3fv(prog2->getUniform("lightdir"), 1, &primaryLight.direction.x);
+
+		glUniform1f(prog2->getUniform("steps_for_tracing"), steps_for_tracing);
+		glUniform1f(prog2->getUniform("cut_off_alpha"), cut_off_alpha);
+		glUniform1f(prog2->getUniform("reflective_cone_angle"), reflective_cone_angle);
+		glUniform1f(prog2->getUniform("ambient_factor"), ambient_factor);
+		glUniform1f(prog2->getUniform("shadow_factor"), shadow_factor);
 
 		glActiveTexture(GL_TEXTURE0);
 		// Debug, shows shadow map when 'y' is pressed

@@ -21,6 +21,7 @@ uniform float uHaloThreshold;
 uniform float uHaloAspectRatio;
 uniform float uChromaticAberration;
 uniform float uDownsample;
+uniform float uGlobalBrightness;
 uniform int debug_on;
 
 vec3 ApplyThreshold(in vec3 _rgb, in float _threshold)
@@ -113,9 +114,10 @@ void main()
 	vec2 uv = vec2(1.0) - fragTex;
 	if (debug_on == 0) {
 		float starburst = SampleStarburst();
-		color.rgb = SampleGhosts(uv, uGhostThreshold) * starburst;
+		color.rgb = texturecolor;
+		color.rgb += SampleGhosts(uv, uGhostThreshold) * starburst;
 		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold) * starburst;
-		color.rgb += texturecolor;
+		
 	}
 	else if (debug_on == 1){
 		color.rgb = vec3(0);
