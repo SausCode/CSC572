@@ -13,6 +13,7 @@ in vec4 worldPos;
 layout(location = 0) uniform sampler2D tex;
 layout(location = 1) uniform sampler2D tex2;
 layout(location = 2) uniform sampler2D tex3;
+layout(location = 3) uniform sampler2D tex4;
 
 uniform vec4 uScale;
 uniform vec4 uBias;
@@ -24,6 +25,7 @@ void main()
 	vec3 texturecolor = texture(tex, fragTex).rgb;
 	vec3 normalfromtex = texture(tex2, fragTex).rgb;
 	vec3 ghost_texture = texture(tex3, fragTex).rgb;
+	vec3 starburst_texture = texture(tex4, fragTex).rgb;
 	vec3 texturenormal = (normalfromtex + vec3(1, 1, 1));
 	texturenormal = texturenormal*0.5;
 	vec3 ey = normalize(fragNor);
@@ -36,6 +38,9 @@ void main()
 
 	pos_out.rgb = ghost_texture;
 	pos_out.a = 1;
+
+	norm_out.rgb = starburst_texture;
+	norm_out.a = 1;
 
 	color = vec4(0.0);
 	// 3x3 Gaussian blur

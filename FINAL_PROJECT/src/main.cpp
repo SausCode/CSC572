@@ -49,7 +49,7 @@ public:
 	camera mycam;
 
 	//texture for sim
-	GLuint wall_texture, wall_normal_texture, ghost_texture;
+	GLuint wall_texture, wall_normal_texture, ghost_texture, starburst_texture;
 
 	// textures for position, color, and normal
 	GLuint fb, depth_rb, FBOpos, FBOcol, FBOnorm;
@@ -148,7 +148,7 @@ public:
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 		{
 			debug_on += 1;
-			if (debug_on > 4){
+			if (debug_on > 5){
 				debug_on = 0;
 			}
 		}
@@ -379,18 +379,33 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
+
+		str = resourceDirectory + "/starburst.png";
+		strcpy(filepath, str.c_str());
+		data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &starburst_texture);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, starburst_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
         
         //[TWOTEXTURES]
         //set the 2 textures to the correct samplers in the fragment shader:
         GLuint Tex1Location = glGetUniformLocation(prog_wall->pid, "tex");
 		GLuint Tex2Location = glGetUniformLocation(prog_wall->pid, "tex2");
 		GLuint Tex3Location = glGetUniformLocation(prog_wall->pid, "tex3");
+		GLuint Tex4Location = glGetUniformLocation(prog_wall->pid, "tex4");
 
         // Then bind the uniform samplers to texture units:
         glUseProgram(prog_wall->pid);
         glUniform1i(Tex1Location, 0);
 		glUniform1i(Tex2Location, 1);
 		glUniform1i(Tex3Location, 2);
+		glUniform1i(Tex4Location, 3);
 
 		glUseProgram(prog_deferred->pid);
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -502,6 +517,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, ghost_texture);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, starburst_texture);
 
 		prog_wall->bind();
 

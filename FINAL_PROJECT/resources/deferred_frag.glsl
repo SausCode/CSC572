@@ -84,6 +84,24 @@ vec3 SampleHalo(in vec2 _uv, in float _radius, in float _aspectRatio, in float _
 	return ApplyThreshold(SampleSceneColor(_uv + haloVec), _threshold) * haloWeight;
 }
 
+float SampleStarburst() {
+	// starburst
+	vec2 centerVec = fragTex - vec2(0.5);
+	float d = length(centerVec);
+	float radial = acos(centerVec.x / d);
+	float mask =
+		texture(norm_tex, vec2(radial + .5 * 1.0, 0.0)).r
+		* texture(norm_tex, vec2(radial - .5 * 0.5, 0.0)).r
+		;
+	mask = clamp(mask + (1.0 - smoothstep(0.0, 0.3, d)), 0.0, 1.0);
+
+	// lens dirt
+	//mask *= textureLod(txLensDirt, vUv, 0.0).r;
+
+	//fResult = textureLod(txFeatures, vUv, 0.0).rgb;// *mask * uGlobalBrightness;
+	return mask;
+}
+
 void main()
 {
 	color.a = 1;
@@ -94,9 +112,10 @@ void main()
 
 	vec2 uv = vec2(1.0) - fragTex;
 	if (debug_on == 0) {
-		color.rgb = texturecolor;
-		color.rgb += SampleGhosts(uv, uGhostThreshold);
-		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
+		float starburst = SampleStarburst();
+		color.rgb = SampleGhosts(uv, uGhostThreshold) * starburst;
+		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold) * starburst;
+		color.rgb += texturecolor;
 	}
 	else if (debug_on == 1){
 		color.rgb = vec3(0);
@@ -113,6 +132,9 @@ void main()
 	}
 	else if (debug_on == 4){
 		color.rgb = texturecolor;
+	}
+	else if (debug_on == 5) {
+		color.rgb = vec3(SampleStarburst());
 	}
 	return;
 }
