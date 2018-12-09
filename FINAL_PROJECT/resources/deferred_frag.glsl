@@ -22,6 +22,7 @@ uniform float uHaloAspectRatio;
 uniform float uChromaticAberration;
 uniform float uDownsample;
 uniform float uGlobalBrightness;
+uniform float uStarburstOffset;
 uniform int debug_on;
 
 vec3 ApplyThreshold(in vec3 _rgb, in float _threshold)
@@ -91,8 +92,8 @@ float SampleStarburst() {
 	float d = length(centerVec);
 	float radial = acos(centerVec.x / d);
 	float mask =
-		texture(norm_tex, vec2(radial + .5 * 1.0, 0.0)).r
-		* texture(norm_tex, vec2(radial - .5 * 0.5, 0.0)).r
+		texture(norm_tex, vec2(radial + uStarburstOffset * 1.0, 0.0)).r
+		* texture(norm_tex, vec2(radial - uStarburstOffset * 0.5, 0.0)).r
 		;
 	mask = clamp(mask + (1.0 - smoothstep(0.0, 0.3, d)), 0.0, 1.0);
 
