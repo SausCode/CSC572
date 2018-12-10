@@ -28,6 +28,7 @@ uniform float uGlobalBrightness;
 uniform float uStarburstOffset;
 uniform int debug_on;
 uniform int pass;
+uniform float ghost_offset;
 
 vec3 ApplyThreshold(in vec3 _rgb, in float _threshold)
 {
@@ -50,6 +51,7 @@ vec3 SampleSceneColor(in vec2 _uv)
 
 vec3 SampleGhosts(in vec2 _uv, in float _threshold)
 {
+	//_uv = _uv - vec2(ghost_offset, 0);
 	vec3 ret = vec3(0.0);
 	vec2 ghostVec = (vec2(0.5) - _uv) * uGhostSpacing;
 	for (int i = 0; i < uGhostCount; ++i) {

@@ -2,6 +2,7 @@
 
 out vec4 color;
 in vec2 fragTex;
+in vec2 flippedFragTex;
 in vec3 fragNor;
 layout(location = 0) uniform sampler2D ghost_tex;
 layout(location = 1) uniform sampler2D halo_tex;
@@ -10,15 +11,13 @@ layout(location = 3) uniform sampler2D col_tex;
 
 uniform vec2 txSize;
 uniform int uSrcLevel;
+uniform int starburst_on;
+uniform int debug_on;
 
 void main()
 {
 	color.a = 1;
-	//vec3 ghost_color = texture(ghost_tex, fragTex).rgb;
-	//vec3 halo_color = texture(halo_tex, fragTex).rgb;
-	//vec3 starburst_color = texture(starburst_tex, fragTex).rgb;
-	vec3 texture_color = texture(col_tex, fragTex).rgb;
-
+	vec3 texture_color = texture(col_tex, flippedFragTex).rgb;
 	vec3 ghost_color;
 	vec3 halo_color;
 	vec3 starburst_color;
@@ -42,10 +41,28 @@ void main()
 		halo_color += textureLod(halo_tex, fragTex + offsets[i] * scale, uSrcLevel).rgb * kernel[i];
 	}
 	color.a = 1;
-	float starburst = texture(starburst_tex, fragTex).r;
-	ghost_color *= starburst;
-	halo_color *= starburst;
-	color.rgb = ghost_color + halo_color + texture_color;
+	if (starburst_on == 1){
+		float starburst = texture(starburst_tex, fragTex).r;
+		ghost_color *= starburst;
+		halo_color *= starburst;	
+	}
+	switch (debug_on){
+		case 0:
+			color.rgb = ghost_color + halo_color + texture_color;
+			break;
+		case 1:
+			color.rgb = ghost_color;
+			break;
+		case 2:
+			color.rgb = halo_color;
+			break;
+		case 3:
+			color.rgb = texture_color;
+			break;
+		default:
+			color.rgb = ghost_color + halo_color + texture_color;
+			break;
+	}
 
 	return;
 }

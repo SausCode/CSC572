@@ -50,7 +50,7 @@ bool WindowManager::init(int const width, int const height)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 	// Create a windowed mode window and its OpenGL context.
-	windowHandle = glfwCreateWindow(width, height, "474 Final Project", nullptr, nullptr);
+	windowHandle = glfwCreateWindow(width, height, "572 Final Project", nullptr, nullptr);
 	if (!windowHandle)
 	{
 		glfwTerminate();

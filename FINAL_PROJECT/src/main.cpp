@@ -72,12 +72,14 @@ public:
 	float uHaloThickness = 0.1f;
 	float uHaloThreshold = 0.5f;
 	float uHaloAspectRatio = 1.0f;
-	float uChromaticAberration = 0.01f;
+	float uChromaticAberration = 0.05f;
 	float uDownsample = 1.0f;
 	float uGlobalBrightness = 0.01;
 	float uStarburstOffset = 0.5;
 	int debug_on = 0;
 	int pass = 0;
+	float ghost_offset = 0;
+	int starburst_on = 1;
 
 	int current_image_file = 0;
 
@@ -173,15 +175,24 @@ public:
 		if (key == GLFW_KEY_A && action == GLFW_PRESS)
 		{
 			texture_x_offset -= .1;
+			//ghost_offset -= .1;
 		}
 		if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		{
 			texture_x_offset += .1;
+			//ghost_offset += .1;
+		}
+		if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+		{
+			starburst_on++;
+			if (starburst_on > 1) {
+				starburst_on = 0;
+			}
 		}
 		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
 		{
-			debug_on += 1;
-			if (debug_on > 5){
+			debug_on++;
+			if (debug_on > 3){
 				debug_on = 0;
 			}
 		}
@@ -191,7 +202,7 @@ public:
 			if (current_image_file < 0){
 				current_image_file = 0;
 			}
-			initGeom(resourceDirectory);
+			change_texture();
 		}
 		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
 		{
@@ -199,13 +210,14 @@ public:
 			if (current_image_file > image_files.size()-1){
 				current_image_file = image_files.size()-1;
 			}
-			initGeom(resourceDirectory);
+			change_texture();
 		}
 		if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS)
 		{
 			print_values();
 		}
 		print_menu();
+		print_values();
 	}
 
 	void init_image_files(std::string resourceDirectory){
@@ -310,6 +322,7 @@ public:
 		prog_deferred->addUniform("uStarburstOffset");
 		prog_deferred->addUniform("debug_on");
 		prog_deferred->addUniform("pass");
+		prog_deferred->addUniform("ghost_offset");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
 
@@ -321,14 +334,52 @@ public:
 		if (!prog_screen->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			//exit(1);
+			exit(1);
 		}
 		prog_screen->addUniform("txSize");
 		prog_screen->addUniform("uSrcLevel");
+		prog_screen->addUniform("starburst_on");
+		prog_screen->addUniform("debug_on");
 		prog_screen->addAttribute("vertPos");
 		prog_screen->addAttribute("vertTex");
     }
-    
+
+	void change_texture() {
+		int width, height, channels;
+		char filepath[1000];
+		//texture
+		string str = image_files[current_image_file];
+		if (current_image_file == 0) {
+			uGhostThreshold = -0.6;
+			uGhostSpacing = 0.9;
+			uGhostCount = 5;
+			uHaloRadius = 0.3;
+			uHaloThreshold = 0.1;
+			uHaloAspectRatio = 0.9;
+			uStarburstOffset = 0.5;
+		}
+		else {
+			uGhostThreshold = -0.6;
+			uGhostSpacing = 0.9;
+			uGhostCount = 4;
+			uHaloRadius = 0.4;
+			uHaloThreshold = 0.6;
+			uHaloAspectRatio = 0.7;
+			uStarburstOffset = 0.5;
+		}
+		strcpy(filepath, str.c_str());
+		unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
+		glGenTextures(1, &wall_texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, wall_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
     void initGeom(const std::string& resourceDirectory)
 	{
 		// Deferred Stuff
@@ -396,23 +447,11 @@ public:
 		int width, height, channels;
 		char filepath[1000];
 
-        //texture
-        string str = image_files[current_image_file];
+		change_texture();
+        
+        std::string str = resourceDirectory + "/lvl1normalscombined.jpg";
         strcpy(filepath, str.c_str());
         unsigned char* data = stbi_load(filepath, &width, &height, &channels, 4);
-        glGenTextures(1, &wall_texture);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, wall_texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        
-        str = resourceDirectory + "/lvl1normalscombined.jpg";
-        strcpy(filepath, str.c_str());
-        data = stbi_load(filepath, &width, &height, &channels, 4);
         glGenTextures(1, &wall_normal_texture);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, wall_normal_texture);
@@ -717,6 +756,7 @@ public:
 		glUniform1f(prog_deferred->getUniform("uDownsample"), uDownsample);
 		glUniform1f(prog_deferred->getUniform("uGlobalBrightness"), uGlobalBrightness);
 		glUniform1f(prog_deferred->getUniform("uStarburstOffset"), uStarburstOffset);
+		glUniform1f(prog_deferred->getUniform("ghost_offset"), ghost_offset);
 		glUniform1i(prog_deferred->getUniform("debug_on"), debug_on); 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
@@ -746,6 +786,8 @@ public:
 		glm::vec2 txSize = glm::vec2(1920, 1080);
 		glUniform2fv(prog_screen->getUniform("txSize"), 1, &txSize.x);
 		glUniform1i(prog_screen->getUniform("uSrcLevel"), 1);
+		glUniform1i(prog_screen->getUniform("starburst_on"), starburst_on);
+		glUniform1i(prog_screen->getUniform("debug_on"), debug_on);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, FBOghost);
 		glActiveTexture(GL_TEXTURE1);
@@ -753,7 +795,7 @@ public:
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, FBOstarburst);
 		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glBindTexture(GL_TEXTURE_2D, wall_texture);
 		glBindVertexArray(VertexArrayIDBox);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_screen->unbind();
