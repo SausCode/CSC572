@@ -3,7 +3,10 @@
 #define GHOST_TINT_PER_SAMPLE 1 // Apply txGhostGradientColor inside the sample loop instead of at the end.
 #define DISABLE_CHROMATIC_ABERRATION 0 // Takes 3x fewer samples.
 
-out vec4 color;
+layout(location = 0) out vec4 ghost;
+layout(location = 1) out vec4 halo;
+layout(location = 2) out vec4 starburst_out;
+
 in vec2 fragTex;
 in vec3 fragNor;
 layout(location = 0) uniform sampler2D col_tex;
@@ -24,6 +27,7 @@ uniform float uDownsample;
 uniform float uGlobalBrightness;
 uniform float uStarburstOffset;
 uniform int debug_on;
+uniform int pass;
 
 vec3 ApplyThreshold(in vec3 _rgb, in float _threshold)
 {
@@ -106,38 +110,17 @@ float SampleStarburst() {
 
 void main()
 {
-	color.a = 1;
-	vec3 texturecolor = texture(col_tex, fragTex).rgb;
-	vec3 normals = texture(norm_tex, fragTex).rgb;
-	vec3 world_pos = texture(pos_tex, fragTex).rgb;
-	vec3 ghost_col = texture(ghost_tex, fragTex).rgb;
-
 	vec2 uv = vec2(1.0) - fragTex;
-	if (debug_on == 0) {
-		float starburst = SampleStarburst();
-		color.rgb = texturecolor;
-		color.rgb += SampleGhosts(uv, uGhostThreshold) * starburst;
-		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold) * starburst;
-		
-	}
-	else if (debug_on == 1){
-		color.rgb = vec3(0);
-		color.rgb += SampleGhosts(uv, uGhostThreshold);
-		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
-	}
-	else if (debug_on == 2){
-		color.rgb = vec3(0);
-		color.rgb += SampleGhosts(uv, uGhostThreshold);		
-	}
-	else if (debug_on == 3){
-		color.rgb = vec3(0);
-		color.rgb += SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
-	}
-	else if (debug_on == 4){
-		color.rgb = texturecolor;
-	}
-	else if (debug_on == 5) {
-		color.rgb = vec3(SampleStarburst());
-	}
+	float starburst = SampleStarburst();
+
+	ghost.a = 1;
+	ghost.rgb = SampleGhosts(uv, uGhostThreshold);
+
+	halo.a = 1;
+	halo.rgb = SampleHalo(uv, uHaloRadius, uHaloAspectRatio, uHaloThreshold);
+
+	starburst_out.a = 1;
+	starburst_out.rgb = vec3(starburst);
+
 	return;
 }

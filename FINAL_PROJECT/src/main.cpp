@@ -40,7 +40,7 @@ public:
 	WindowManager * windowManager = nullptr;
 
 	// Our shader program
-    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred;
+    std::shared_ptr<Program> prog_wall, prog_mouse, prog_deferred, prog_screen;
  
 	// Shape to be used (from obj file)
     shared_ptr<Shape> wall, mouse;
@@ -52,7 +52,7 @@ public:
 	GLuint wall_texture, wall_normal_texture, ghost_texture, starburst_texture;
 
 	// textures for position, color, and normal
-	GLuint fb, depth_rb, FBOpos, FBOcol, FBOnorm;
+	GLuint fb, depth_rb, FBOpos, FBOcol, FBOnorm, fb2, FBOghost, FBOhalo, FBOstarburst;
 
 	// Contains vertex information for OpenGL
 	GLuint VertexArrayID;
@@ -77,6 +77,7 @@ public:
 	float uGlobalBrightness = 0.01;
 	float uStarburstOffset = 0.5;
 	int debug_on = 0;
+	int pass = 0;
 
 	int current_image_file = 0;
 
@@ -84,6 +85,28 @@ public:
 
 	std::vector<std::string> image_files;
 	std::string resourceDirectory;
+
+	void print_menu() {
+		cout << "uGhostThreshold = W/S" << endl;
+		cout << "uGhostSpacing = I/K" << endl;
+		cout << "uGhostCount = UP/DOWN" << endl;
+		cout << "uHaloRadius = 1/2" << endl;
+		cout << "uHaloThreshold = 3/4" << endl;
+		cout << "uHaloAspectRatio = 5/6" << endl;
+		cout << "uStarburstOffset = 7/8" << endl;
+		cout << "Change Image = Left/Right" << endl;
+		cout << endl;
+	}
+
+	void print_values() {
+		cout << "uGhostThreshold = " << uGhostThreshold << endl;
+		cout << "uGhostSpacing = " << uGhostSpacing << endl;
+		cout << "uGhostCount = " << uGhostCount << endl;
+		cout << "uHaloRadius = " << uHaloRadius << endl;
+		cout << "uHaloThreshold = " << uHaloThreshold << endl;
+		cout << "uHaloAspectRatio = " << uHaloAspectRatio << endl;
+		cout << "uStarburstOffset = " << uStarburstOffset << endl;
+	}
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -139,6 +162,14 @@ public:
 		{
 			uHaloAspectRatio -= .1;
 		}
+		if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+		{
+			uStarburstOffset += .1;
+		}
+		if (key == GLFW_KEY_8 && action == GLFW_PRESS)
+		{
+			uStarburstOffset -= .1;
+		}
 		if (key == GLFW_KEY_A && action == GLFW_PRESS)
 		{
 			texture_x_offset -= .1;
@@ -169,7 +200,12 @@ public:
 				current_image_file = image_files.size()-1;
 			}
 			initGeom(resourceDirectory);
-		}		
+		}
+		if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS)
+		{
+			print_values();
+		}
+		print_menu();
 	}
 
 	void init_image_files(std::string resourceDirectory){
@@ -257,7 +293,7 @@ public:
 		if (!prog_deferred->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-			//exit(1);
+			exit(1);
 		}
 
 		prog_deferred->init();
@@ -273,8 +309,24 @@ public:
 		prog_deferred->addUniform("uGlobalBrightness");
 		prog_deferred->addUniform("uStarburstOffset");
 		prog_deferred->addUniform("debug_on");
+		prog_deferred->addUniform("pass");
 		prog_deferred->addAttribute("vertPos");
 		prog_deferred->addAttribute("vertTex");
+
+		// Initialize the GLSL program.
+		prog_screen = make_shared<Program>();
+		prog_screen->setVerbose(true);
+		prog_screen->setShaderNames(resourceDirectory + "/screen_vert.glsl", resourceDirectory + "/screen_frag.glsl");
+
+		if (!prog_screen->init())
+		{
+			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			//exit(1);
+		}
+		prog_screen->addUniform("txSize");
+		prog_screen->addUniform("uSrcLevel");
+		prog_screen->addAttribute("vertPos");
+		prog_screen->addAttribute("vertTex");
     }
     
     void initGeom(const std::string& resourceDirectory)
@@ -478,10 +530,85 @@ public:
 		switch (status)
 		{
 		case GL_FRAMEBUFFER_COMPLETE:
-			cout << "status framebuffer: good";
+			cout << "status framebuffer: good" << endl;
 			break;
 		default:
-			cout << "status framebuffer: bad!!!!!!!!!!!!!!!!!!!!!!!!!";
+			cout << "status framebuffer: bad" << endl;
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// Create second FBO
+		glUseProgram(prog_screen->pid);
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		glGenFramebuffers(1, &fb2);
+		glActiveTexture(GL_TEXTURE0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fb2);
+
+		// Deffered Rendering stuff
+
+		// Generate Flare Texture
+		glGenTextures(1, &FBOghost);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOghost);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		glGenTextures(1, &FBOhalo);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOhalo);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+		glGenTextures(1, &FBOstarburst);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOstarburst);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+
+
+		//Attach 2D texture to this FBO
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, FBOghost, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, FBOhalo, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, FBOstarburst, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, FBOcol, 0);
+
+		//-------------------------
+		glGenRenderbuffers(1, &depth_rb);
+		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+		//-------------------------
+		//Attach depth buffer to FBO
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
+		//-------------------------
+		//Does the GPU support current FBO configuration?
+
+		Tex1Loc = glGetUniformLocation(prog_screen->pid, "ghost_tex");
+		Tex2Loc = glGetUniformLocation(prog_screen->pid, "halo_tex");
+		Tex3Loc = glGetUniformLocation(prog_screen->pid, "starburst_tex");
+		int Tex4Loc = glGetUniformLocation(prog_screen->pid, "col_tex");
+
+		glUniform1i(Tex1Loc, 0);
+		glUniform1i(Tex2Loc, 1);
+		glUniform1i(Tex3Loc, 2);
+		glUniform1i(Tex4Loc, 3);
+
+		status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		switch (status)
+		{
+		case GL_FRAMEBUFFER_COMPLETE:
+			cout << "status framebuffer: good" << endl;
+			break;
+		default:
+			cout << "status framebuffer: bad" << endl;
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -537,7 +664,7 @@ public:
 		glUniform4fv(prog_wall->getUniform("uScale"), 1, &uScale.x);
 		glUniform4fv(prog_wall->getUniform("uBias"), 1, &uBias.x);
 		glUniform2fv(prog_wall->getUniform("txSize"), 1, &txSize.x);
-		glUniform1i(prog_wall->getUniform("uSrcLevel"), 0);
+		glUniform1i(prog_wall->getUniform("uSrcLevel"), 1);
 		glUniformMatrix4fv(prog_wall->getUniform("M"), 1, GL_FALSE, &M[0][0]);
 		wall->draw(prog_wall);
 
@@ -554,8 +681,11 @@ public:
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
-	void render_to_screen()
+	void render_deferred()
 	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fb2);
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+		glDrawBuffers(3, buffers);
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -576,6 +706,7 @@ public:
 		glBindVertexArray(VertexArrayIDBox);
 
 		glUniform1i(prog_deferred->getUniform("uGhostCount"), uGhostCount);
+		glUniform1i(prog_deferred->getUniform("pass"), pass);
 		glUniform1f(prog_deferred->getUniform("uGhostSpacing"), uGhostSpacing);
 		glUniform1f(prog_deferred->getUniform("uGhostThreshold"), uGhostThreshold);
 		glUniform1f(prog_deferred->getUniform("uHaloRadius"), uHaloRadius);
@@ -585,10 +716,47 @@ public:
 		glUniform1f(prog_deferred->getUniform("uChromaticAberration"), uChromaticAberration);
 		glUniform1f(prog_deferred->getUniform("uDownsample"), uDownsample);
 		glUniform1f(prog_deferred->getUniform("uGlobalBrightness"), uGlobalBrightness);
-		glUniform1f(prog_deferred->getUniform("uStarburstOffset"), cos(glfwGetTime()));
+		glUniform1f(prog_deferred->getUniform("uStarburstOffset"), uStarburstOffset);
 		glUniform1i(prog_deferred->getUniform("debug_on"), debug_on); 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		prog_deferred->unbind();
+		// Save output to framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindTexture(GL_TEXTURE_2D, FBOghost);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOhalo);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, FBOstarburst);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	void render_to_screen()
+	{
+		// Get current frame buffer size.
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		float aspect = width / (float)height;
+		glViewport(0, 0, width, height);
+
+		glm::mat4 M, S, T;
+		// Clear framebuffer.
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		prog_screen->bind();
+		glm::vec2 txSize = glm::vec2(1920, 1080);
+		glUniform2fv(prog_screen->getUniform("txSize"), 1, &txSize.x);
+		glUniform1i(prog_screen->getUniform("uSrcLevel"), 1);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, FBOghost);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, FBOhalo);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, FBOstarburst);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, FBOcol);
+		glBindVertexArray(VertexArrayIDBox);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		prog_screen->unbind();
 	}
 };
 
@@ -629,6 +797,7 @@ int main(int argc, char **argv)
 	while (! glfwWindowShouldClose(windowManager->getHandle()))
 	{
 		application->render_to_texture();
+		application->render_deferred();
 		application->render_to_screen();
 
 		// Swap front and back buffers.

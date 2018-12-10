@@ -56,7 +56,7 @@ void main()
 		vec2(-1.0,  1.0), vec2( 0.0,  1.0), vec2( 1.0,  1.0),
 	};
 	for (int i = 0; i < 9; ++i) {
-		color += textureLod(tex, fragTex + offsets[i] * scale, uSrcLevel) * kernel[i];
+		color += textureLod(tex, fragTex + offsets[i] * scale, 0) * kernel[i];
 	}
 	color.a = 1;
 }
