@@ -222,11 +222,14 @@ public:
 	// Data necessary to give our triangle to OpenGL
 	GLuint VertexBufferID;
 
+	float xWingZ = 0.f;
+
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
 		float zAmount = .05;
 		update();
+		std::cout << "key is : " << key << std::endl;
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
@@ -234,6 +237,7 @@ public:
 		if (key == GLFW_KEY_W && action == GLFW_PRESS)
 		{
 			mycam.w = 1;
+			xWingZ += .1;
 		}
 		if (key == GLFW_KEY_W && action == GLFW_RELEASE)
 		{
@@ -272,6 +276,7 @@ public:
 		if (key == GLFW_KEY_S && action == GLFW_PRESS)
 		{
 			mycam.s = 1;
+			xWingZ -= .1;
 		}
 		if (key == GLFW_KEY_S && action == GLFW_RELEASE)
 		{
@@ -648,7 +653,7 @@ public:
 		R = glm::rotate(glm::mat4(1), 110.f, glm::vec3(1, 0, 0));
 		R = glm::rotate(R, -3.145f, glm::vec3(0, 0, 1));
 		R = glm::rotate(R, XWingRoll, glm::vec3(0, 0, 1));
-		glm::vec3 translation = glm::vec3(-XWingYaw, -XWingZ + 1, mycam.pos.z + 3);
+		glm::vec3 translation = glm::vec3(-XWingYaw, -XWingZ + 1, xWingZ + 5);
 		T = glm::translate(glm::mat4(1), -translation);
 		M = T * R;
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, &M[0][0]);

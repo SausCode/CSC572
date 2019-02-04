@@ -1,3 +1,0 @@
-/home/john/dev/CSC572/FINAL_PROJECT/build/CMakeFiles/rebuild_cache.dir
-/home/john/dev/CSC572/FINAL_PROJECT/build/CMakeFiles/2D_Raytracer.dir
-/home/john/dev/CSC572/FINAL_PROJECT/build/CMakeFiles/edit_cache.dir
